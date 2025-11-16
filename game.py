@@ -1,5 +1,3 @@
-from itertools import count
-
 from boardgame import BoardGame
 
 
