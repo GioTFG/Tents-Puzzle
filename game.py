@@ -16,9 +16,15 @@ class TentsGame(BoardGame):
 
     # Inherited methods
     def play(self, x: int, y: int, action: str):
-        if 0 <= x <= self._w - 1 and 0 <= y <= self._h - 1:
+        if self._check_out_of_bounds(x, y):
             i = self._w * y + x
-            self._board[i] = 2 # Inserire tende e basta, senza restrizioni
+            match self._board[i]:
+                case 0:
+                    self._board[i] = 2
+                case 2:
+                    self._board[i] = 3
+                case 3:
+                    self._board[i] = 0
 
     def finished(self) -> bool:
         return self._check_equity() and self._check_all_trees() and self._check_all_tents()
@@ -82,6 +88,8 @@ class TentsGame(BoardGame):
                 return "Tree"
             case 2:
                 return "Tent"
+            case 3:
+                return "Grass"
             case _:
                 raise ValueError("Invalid number")
 
