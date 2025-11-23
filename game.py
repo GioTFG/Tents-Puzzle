@@ -115,7 +115,7 @@ class TentsGame(BoardGame):
         """
         if 0 <= x < self._w and 0 <= y < self._h: # Different from the method as it also includes row and column 0 (constraint column/row)
             return self._board[y * self._w + x]
-        raise IndexError("Out of bounds")
+        raise IndexError(f"Out of bounds: {(x, y)}")
 
     def _cell_state(self, x: int, y: int) -> str:
         """
@@ -202,7 +202,7 @@ class TentsGame(BoardGame):
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
                 near_x, near_y = x + dx, y + dy
-                if (near_x, near_y) != (x, y) and self._check_out_of_bounds(x, y): # The central cell will not be checked
+                if (near_x, near_y) != (x, y) and self._check_out_of_bounds(near_x, near_y): # The central cell will not be checked
                     if self._cell_state(near_x, near_y) == state:
                         return True
         return False
