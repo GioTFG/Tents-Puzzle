@@ -5,16 +5,20 @@ from boardgame import BoardGame
 W, H = 40, 40
 
 class TentsGame(BoardGame):
-    def __init__(self, w: int = 5, h: int = 5):
+    def __init__(self, w: int = 6, h: int = 6):
 
         self._w, self._h = w, h
 
         self._board = [ # Tenda: 2, Albero: 1, Vuoto: 0
-            0, 1, 0, 0, 0,
-            0, 0, 0, 0, 1,
-            0, 1, 0, 1, 0,
-            0, 0, 0, 0, 1,
-            0, 0, 0, 0, 0
+            # The next two lines are for column and row number rules
+            # Numeri: 90 -> 0, 91 -> 1, 92 -> 2, 93 -> 3 ecc.
+            # -1: Null (Do not draw)
+            -1, 92, 90, 91, 90, 92,
+            92, 0,  1,  0,  0,  0,
+            90, 0,  0,  0,  0,  1,
+            92, 0,  1,  0,  1,  0,
+            90, 0,  0,  0,  0,  1,
+            91, 0,  0,  0,  0,  0
         ]
 
     # Static attributes
@@ -29,10 +33,16 @@ class TentsGame(BoardGame):
         "⛺": ((255, 117, 24), 0)
     }
     TEXTS = {
+        "Null": "",
         "Empty": " ",
         "Tree": "🌳",
         "Tent": "⛺",
         "Grass": "🌿",
+        "Number0": "0", "Number1": "1",
+        "Number2": "2", "Number3": "3",
+        "Number4": "4", "Number5": "5",
+        "Number6": "6", "Number7": "7",
+        "Number8": "8", "Number9": "9",
     }
 
     # Inherited methods
@@ -92,7 +102,7 @@ class TentsGame(BoardGame):
         """
         Restituisce il numero così com'è che equivale allo state della cella passata come parametro.
         """
-        if self._check_out_of_bounds(x, y):
+        if 0 <= x < self._w and 0 <= y < self._h: # Different from the method as it also includes row and column 0 (constraint column/row)
             return self._board[y * self._w + x]
         raise IndexError("Out of bounds")
 
@@ -102,6 +112,8 @@ class TentsGame(BoardGame):
         """
         number = self._cell_number(x, y)
         match number:
+            case -1:
+                return "Null"
             case 0:
                 return "Empty"
             case 1:
@@ -110,13 +122,15 @@ class TentsGame(BoardGame):
                 return "Tent"
             case 3:
                 return "Grass"
+            case num if 90 <= num <= 99:
+                return "Number" + str(num-90)
             case _:
-                raise ValueError("Invalid number")
+                raise ValueError(f"Invalid number: {number}")
 
     def _cell_text(self, state: str):
         if state in self.TEXTS:
             return self.TEXTS[state]
-        raise ValueError("Invalid state")
+        raise ValueError(f"Invalid state: {state}")
 
     # -- CHECK METHODS --
     def _check_equity(self) -> bool:
@@ -126,7 +140,7 @@ class TentsGame(BoardGame):
         return self._count_trees() == self._count_tents()
 
     def _check_out_of_bounds(self, x: int, y: int) -> bool:
-        return 0 <= x < self._w and 0 <= y < self._h
+        return 1 <= x < self._w and 1 <= y < self._h # From 1 as column and row 0 are for the constraint numbers
 
     def _check_tree_adjacency(self, x: int, y: int) -> bool:
         if self._cell_state(x, y) != "Tree":
