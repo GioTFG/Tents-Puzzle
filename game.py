@@ -285,6 +285,19 @@ class TentsGame(BoardGame):
                 return False
         return True
 
+    def _check_tree_tent_connection(self, board: list[int] | bool) -> bool | list[int]:
+        """
+        Recursive function.
+        It takes as an argument a board with trees and tents (the rest will be ignored).
+        For each iteration, it marks as ignored every couple of tree and tent that is unambiguously connected.
+        Then it calls itself on that updated board, until there aren't any more possible simplifications.
+        When that happens, if no tree or tent is present on the board, it passes and returns true.
+        Otherwise, there would be unclear connections or some trees might not be connected to any tent, so it returns false.
+        """
+        # if isinstance(board, bool):
+        #     return board
+
+        #TODO: Continue from here
 
 def tents_gui_play(game_instance: TentsGame):
     g2d.init_canvas((game_instance.cols() * W, game_instance.rows() * H + H))
