@@ -49,6 +49,7 @@ class BoardGameGui:
         g2d.set_color(WHITE)
         g2d.draw_rect((x * W + 1, y * H + 1), (cols * W - 2, H - 2))
 
+        # Here, I edited the class to check the entire text and not choose the colour based on the last character
         if cols == 1 and text in self._annots:
             color, stroke = self._annots[text]
             g2d.set_color(color, stroke)
