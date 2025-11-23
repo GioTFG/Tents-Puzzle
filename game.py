@@ -21,7 +21,7 @@ class TentsGame(BoardGame):
             91, 0,  0,  0,  0,  0
         ]
 
-    # Static attributes
+    # -- STATIC ATTRIBUTES --
     ACTIONS = {
         "LeftButton": "CycleRight",
         "RightButton": "CycleLeft",
@@ -45,7 +45,7 @@ class TentsGame(BoardGame):
         "Number8": "8", "Number9": "9",
     }
 
-    # Inherited methods
+    # -- INHERITED METHODS --
     def play(self, x: int, y: int, action: str):
         if self._check_out_of_bounds(x, y):
             i = self._w * y + x
@@ -98,20 +98,20 @@ class TentsGame(BoardGame):
     # -- UTILITY METHODS --
     def _count_trees(self) -> int:
         """
-        Restituisce il numero totale di alberi presenti nel tabellone
+        Returns total number of trees in the board
         """
         return self._board.count(1)
 
     def _count_tents(self) -> int:
         """
-        Restituisce il numero totale di tende presenti nel tabellone
+        Returns total number of tents in the board
         """
         return self._board.count(2)
 
 
     def _cell_number(self, x: int, y: int) -> int:
         """
-        Restituisce il numero così com'è che equivale allo state della cella passata come parametro.
+        Returns the exact number that represents the state of the cell at (x, y).
         """
         if 0 <= x < self._w and 0 <= y < self._h: # Different from the method as it also includes row and column 0 (constraint column/row)
             return self._board[y * self._w + x]
@@ -119,7 +119,7 @@ class TentsGame(BoardGame):
 
     def _cell_state(self, x: int, y: int) -> str:
         """
-        Restituisce lo stato della cella passata come parametro in forma di stringa, convertita dal corrispondente intero
+        Returns the state of the cell at (x, y) as a string with a specific value.
         """
         number = self._cell_number(x, y)
         match number:
@@ -139,11 +139,17 @@ class TentsGame(BoardGame):
                 raise ValueError(f"Invalid number: {number}")
 
     def _cell_text(self, state: str):
+        """
+        Returns the text that must be rendered to represent the state passed.
+        """
         if state in self.TEXTS:
             return self.TEXTS[state]
         raise ValueError(f"Invalid state: {state}")
 
     def _get_column(self, x: int) -> list[int]:
+        """
+        Returns a list of all the cells in the specified column.
+        """
         col = []
         i = x
         for _ in range(self._h):
@@ -152,6 +158,9 @@ class TentsGame(BoardGame):
         return col
 
     def _get_row(self, y: int) -> list[int]:
+        """
+        Returns a list of all the cells in the specified row.
+        """
         row = []
         i = y * self._w
         for _ in range(self._w):
@@ -162,12 +171,16 @@ class TentsGame(BoardGame):
     # -- CHECK METHODS --
     def _check_equity(self) -> bool:
         """
-        Verifica che il numero di tende sia uguale al numero di alberi
+        Checks that the number of tents and trees are equal.
         """
         return self._count_trees() == self._count_tents()
 
     def _check_out_of_bounds(self, x: int, y: int) -> bool:
-        return 1 <= x < self._w and 1 <= y < self._h # From 1 as column and row 0 are for the constraint numbers
+        """
+        Checks that the cell at (x, y) is a valid cell.
+        (Constraints cells, in first row and first column, are not included).
+        """
+        return 1 <= x < self._w and 1 <= y < self._h
 
     def _check_if_is_adjacent(self, x: int, y: int, state: str) -> bool:
         """
@@ -195,12 +208,18 @@ class TentsGame(BoardGame):
         return False
 
     def _check_tree_adjacency(self, x: int, y: int) -> bool:
+        """
+        Checks if the passed tree at (x, y) has at least one adjacent (not diagonal) cell.
+        """
         if self._cell_state(x, y) != "Tree":
             raise ValueError("Not a tree")
 
         return self._check_if_is_adjacent(x, y, "Tent")
 
     def _check_all_trees(self) -> bool:
+        """
+        Checks if all trees have at least one adjacent (not diagonal) tent.
+        """
         for i in range(self._h):
             for j in range(self._w):
                 if self._cell_state(i, j) == "Tree" and not self._check_tree_adjacency(i, j):
@@ -208,17 +227,26 @@ class TentsGame(BoardGame):
         return True
 
     def _check_tent_adjacency(self, x: int, y: int) -> bool:
+        """
+        Checks if the passed tent has at least one adjacent (not diagonal) tree.
+        """
         if self._cell_state(x, y) != "Tent":
             raise ValueError("Not a tent")
 
         return self._check_if_is_adjacent(x, y, "Tree")
 
     def _check_tent_vicinity(self, x: int, y: int) -> bool:
+        """
+        Checks if the passed tent has at least one near (diagonal is valid) tent.
+        """
         if self._cell_state(x, y) != "Tent":
             raise ValueError("Not a tent")
         return self._check_if_is_near(x, y, "Tent")
 
     def _check_all_tents_adj_trees(self) -> bool:
+        """
+        Checks if all tents have at least one adjacent (not diagonal) tree.
+        """
         for i in range(self._h):
             for j in range(self._w):
                 if self._cell_state(i, j) == "Tent" and not self._check_tent_adjacency(i, j):
@@ -226,6 +254,9 @@ class TentsGame(BoardGame):
         return True
 
     def _check_all_tents_vicinity(self) -> bool:
+        """
+        Checks if all tents have no near (diagonal is valid) tent.
+        """
         for i in range(self._h):
             for j in range(self._w):
                 if self._cell_state(i, j) == "Tent" and self._check_tent_vicinity(i, j):
@@ -233,6 +264,9 @@ class TentsGame(BoardGame):
         return True
 
     def _check_row_constraints(self):
+        """
+        Checks if the tent number constraint is satisfied for every row.
+        """
         for r in range(1, self._h): # First row is excluded because it's for constraints
             tent_number, *cells = [c for c in self._get_row(r)]
             tent_number -= 90 # Because numbers are set as 90 + the actual number
@@ -241,6 +275,9 @@ class TentsGame(BoardGame):
         return True
 
     def _check_col_constraints(self):
+        """
+        Checks if the tent number constraint is satisfied for every column.
+        """
         for c in range(1, self._w): # First column is excluded because it's for constraints
             tent_number, *cells = [r for r in self._get_column(c)]
             tent_number -= 90 # Because numbers are set as 90 + the actual number
