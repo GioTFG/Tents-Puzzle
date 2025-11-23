@@ -87,13 +87,13 @@ class TentsGame(BoardGame):
         elif not self._check_all_tents_adj_trees():
             return "Not all tents have a tree"
         elif not self._check_all_tents_vicinity():
-            return "There are at least two tents close to each other"
+            return "Tents must be distant"
         elif not self._check_row_constraints():
             return "Row constraints not satisfied"
         elif not self._check_col_constraints():
             return "Column constraints not satisfied"
         else:
-            return "Huh?" # Not possible case
+            return "Huh? Even I'm confused!" # Not possible case
 
     # -- UTILITY METHODS --
     def _count_trees(self) -> int:
