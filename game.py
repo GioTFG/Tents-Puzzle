@@ -64,7 +64,8 @@ class TentsGame(BoardGame):
     def finished(self) -> bool:
         return self._check_equity() and \
             self._check_all_trees() and \
-            self._check_all_tents() and \
+            self._check_all_tents_adj_trees() and \
+            self._check_all_tents_vicinity() and \
             self._check_row_constraints() and \
             self._check_col_constraints()
 
@@ -83,8 +84,10 @@ class TentsGame(BoardGame):
             return "# of tents != # of trees"
         elif not self._check_all_trees():
             return "Not all trees have a tent"
-        elif not self._check_all_tents():
+        elif not self._check_all_tents_adj_trees():
             return "Not all tents have a tree"
+        elif not self._check_all_tents_vicinity():
+            return "There are at least two tents close to each other"
         elif not self._check_row_constraints():
             return "Row constraints not satisfied"
         elif not self._check_col_constraints():
@@ -166,15 +169,36 @@ class TentsGame(BoardGame):
     def _check_out_of_bounds(self, x: int, y: int) -> bool:
         return 1 <= x < self._w and 1 <= y < self._h # From 1 as column and row 0 are for the constraint numbers
 
+    def _check_if_is_adjacent(self, x: int, y: int, state: str) -> bool:
+        """
+        Returns True if there is at least one adjacent (not diagonal) cell of type state.
+        Otherwise, returns False.
+        """
+        for adj_x, adj_y in ((x, y + 1), (x, y - 1), (x + 1, y), (x - 1, y)):
+            if self._check_out_of_bounds(adj_x, adj_y): # Se è fuori, siamo a bordo e si può ignorare
+                if self._cell_state(adj_x, adj_y) == state:
+                    return True
+        return False
+
+    def _check_if_is_near(self, x: int, y: int, state: str) -> bool:
+        """
+        Returns True if there is at least one cell of type "state" near the cell at position (x, y).
+        Otherwise, returns False.
+        Diagonal cells are included.
+        """
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                near_x, near_y = x + dx, y + dy
+                if (near_x, near_y) != (x, y) and self._check_out_of_bounds(x, y): # The central cell will not be checked
+                    if self._cell_state(near_x, near_y) == state:
+                        return True
+        return False
+
     def _check_tree_adjacency(self, x: int, y: int) -> bool:
         if self._cell_state(x, y) != "Tree":
             raise ValueError("Not a tree")
 
-        for adj_x, adj_y in ((x, y + 1), (x, y - 1), (x + 1, y), (x - 1, y)):
-            if self._check_out_of_bounds(adj_x, adj_y): # Se è fuori, siamo a bordo e si può ignorare
-                if self._cell_state(adj_x, adj_y) == "Tent":
-                    return True
-        return False
+        return self._check_if_is_adjacent(x, y, "Tent")
 
     def _check_all_trees(self) -> bool:
         for i in range(self._h):
@@ -187,16 +211,24 @@ class TentsGame(BoardGame):
         if self._cell_state(x, y) != "Tent":
             raise ValueError("Not a tent")
 
-        for adj_x, adj_y in ((x, y + 1), (x, y - 1), (x + 1, y), (x - 1, y)):
-            if self._check_out_of_bounds(adj_x, adj_y):  # Se è fuori, siamo a bordo e si può ignorare
-                if self._cell_state(adj_x, adj_y) == "Tree":
-                    return True
-        return False
+        return self._check_if_is_adjacent(x, y, "Tree")
 
-    def _check_all_tents(self) -> bool:
+    def _check_tent_vicinity(self, x: int, y: int) -> bool:
+        if self._cell_state(x, y) != "Tent":
+            raise ValueError("Not a tent")
+        return self._check_if_is_near(x, y, "Tent")
+
+    def _check_all_tents_adj_trees(self) -> bool:
         for i in range(self._h):
             for j in range(self._w):
                 if self._cell_state(i, j) == "Tent" and not self._check_tent_adjacency(i, j):
+                    return False
+        return True
+
+    def _check_all_tents_vicinity(self) -> bool:
+        for i in range(self._h):
+            for j in range(self._w):
+                if self._cell_state(i, j) == "Tent" and self._check_tent_vicinity(i, j):
                     return False
         return True
 
