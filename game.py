@@ -1,5 +1,8 @@
+import g2d
+from boardgamegui import BoardGameGui
 from boardgame import BoardGame
 
+W, H = 40, 40
 
 class TentsGame(BoardGame):
     def __init__(self, w: int = 5, h: int = 5):
@@ -14,17 +17,39 @@ class TentsGame(BoardGame):
             0, 0, 0, 0, 0
         ]
 
+    # Static attributes
+    ACTIONS = {
+        "LeftButton": "CycleRight",
+        "RightButton": "CycleLeft",
+    }
+    ANNOTS = {
+        " ": ((128, 128, 128), 0),
+        "🌳": ((10, 100, 10), 0),
+        "🌿": ((100, 200, 100), 0),
+        "⛺": ((255, 117, 24), 0)
+    }
+    TEXTS = {
+        "Empty": " ",
+        "Tree": "🌳",
+        "Tent": "⛺",
+        "Grass": "🌿",
+    }
+
     # Inherited methods
     def play(self, x: int, y: int, action: str):
         if self._check_out_of_bounds(x, y):
             i = self._w * y + x
-            match self._board[i]:
-                case 0:
-                    self._board[i] = 2
-                case 2:
-                    self._board[i] = 3
-                case 3:
-                    self._board[i] = 0
+            match action:
+                case "CycleRight":
+                    match self._board[i]:
+                        case 0: self._board[i] = 2
+                        case 2: self._board[i] = 3
+                        case 3: self._board[i] = 0
+                case "CycleLeft":
+                    match self._board[i]:
+                        case 0: self._board[i] = 3
+                        case 2: self._board[i] = 0
+                        case 3: self._board[i] = 2
 
     def finished(self) -> bool:
         return self._check_equity() and self._check_all_trees() and self._check_all_tents()
@@ -35,7 +60,7 @@ class TentsGame(BoardGame):
         return self._h
 
     def read(self, x: int, y: int) -> str:
-        return self._cell_state(x, y)
+        return self._cell_text(self._cell_state(x, y))
 
     def status(self) -> str:
         if self.finished():
@@ -47,9 +72,9 @@ class TentsGame(BoardGame):
         elif not self._check_all_tents():
             return "Not all tents have a tree"
         else:
-            return "Huh?"
+            return "Huh?" # Not possible case
 
-    # Utility methods
+    # -- UTILITY METHODS --
     def _count_trees(self) -> int:
         """
         Restituisce il numero totale di alberi presenti nel tabellone
@@ -62,11 +87,6 @@ class TentsGame(BoardGame):
         """
         return self._board.count(2)
 
-    def _check_equity(self) -> bool:
-        """
-        Verifica che il numero di tende sia uguale al numero di alberi
-        """
-        return self._count_trees() == self._count_tents()
 
     def _cell_number(self, x: int, y: int) -> int:
         """
@@ -92,6 +112,18 @@ class TentsGame(BoardGame):
                 return "Grass"
             case _:
                 raise ValueError("Invalid number")
+
+    def _cell_text(self, state: str):
+        if state in self.TEXTS:
+            return self.TEXTS[state]
+        raise ValueError("Invalid state")
+
+    # -- CHECK METHODS --
+    def _check_equity(self) -> bool:
+        """
+        Verifica che il numero di tende sia uguale al numero di alberi
+        """
+        return self._count_trees() == self._count_tents()
 
     def _check_out_of_bounds(self, x: int, y: int) -> bool:
         return 0 <= x < self._w and 0 <= y < self._h
@@ -130,7 +162,12 @@ class TentsGame(BoardGame):
                     return False
         return True
 
+
+def tents_gui_play(game_instance: TentsGame):
+    g2d.init_canvas((game_instance.cols() * W, game_instance.rows() * H + H))
+    ui = BoardGameGui(game_instance, game_instance.ACTIONS, game_instance.ANNOTS)
+    g2d.main_loop(ui.tick)
+
 if __name__ == "__main__":
-    from boardgamegui import gui_play
     game = TentsGame()
-    gui_play(game)
+    tents_gui_play(game)

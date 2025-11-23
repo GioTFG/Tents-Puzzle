@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-@author  Michele Tomaiuolo - https://tomamic.github.io/
-@license This software is free - https://opensource.org/license/mit
-"""
-
 try:
     from __main__ import g2d
 except:
@@ -55,12 +49,10 @@ class BoardGameGui:
         g2d.set_color(WHITE)
         g2d.draw_rect((x * W + 1, y * H + 1), (cols * W - 2, H - 2))
 
-        last = text[-1:]
-        if cols == 1 and last in self._annots:
-            color, stroke = self._annots[last]
+        if cols == 1 and text in self._annots:
+            color, stroke = self._annots[text]
             g2d.set_color(color, stroke)
             g2d.draw_circle((x * W + W / 2, y * H + W / 2), min(W, H) / 2 - 2)
-            text = text[:-1]
 
         chars = max(1, len(text))
         fsize = min(0.75 * H, 1.5 * cols * W / chars)
