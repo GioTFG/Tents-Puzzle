@@ -62,7 +62,11 @@ class TentsGame(BoardGame):
                         case 3: self._board[i] = 2
 
     def finished(self) -> bool:
-        return self._check_equity() and self._check_all_trees() and self._check_all_tents()
+        return self._check_equity() and \
+            self._check_all_trees() and \
+            self._check_all_tents() and \
+            self._check_row_constraints() and \
+            self._check_col_constraints()
 
     def cols(self) -> int:
         return self._w
@@ -81,6 +85,10 @@ class TentsGame(BoardGame):
             return "Not all trees have a tent"
         elif not self._check_all_tents():
             return "Not all tents have a tree"
+        elif not self._check_row_constraints():
+            return "Row constraints not satisfied"
+        elif not self._check_col_constraints():
+            return "Column constraints not satisfied"
         else:
             return "Huh?" # Not possible case
 
@@ -132,6 +140,22 @@ class TentsGame(BoardGame):
             return self.TEXTS[state]
         raise ValueError(f"Invalid state: {state}")
 
+    def _get_column(self, x: int) -> list[int]:
+        col = []
+        i = x
+        for _ in range(self._h):
+            col.append(self._board[i])
+            i += self._w
+        return col
+
+    def _get_row(self, y: int) -> list[int]:
+        row = []
+        i = y * self._w
+        for _ in range(self._w):
+            row.append(self._board[i])
+            i += 1
+        return row
+
     # -- CHECK METHODS --
     def _check_equity(self) -> bool:
         """
@@ -174,6 +198,22 @@ class TentsGame(BoardGame):
             for j in range(self._w):
                 if self._cell_state(i, j) == "Tent" and not self._check_tent_adjacency(i, j):
                     return False
+        return True
+
+    def _check_row_constraints(self):
+        for r in range(1, self._h): # First row is excluded because it's for constraints
+            tent_number, *cells = [c for c in self._get_row(r)]
+            tent_number -= 90 # Because numbers are set as 90 + the actual number
+            if tent_number != cells.count(2):
+                return False
+        return True
+
+    def _check_col_constraints(self):
+        for c in range(1, self._w): # First column is excluded because it's for constraints
+            tent_number, *cells = [r for r in self._get_column(c)]
+            tent_number -= 90 # Because numbers are set as 90 + the actual number
+            if tent_number != cells.count(2):
+                return False
         return True
 
 
