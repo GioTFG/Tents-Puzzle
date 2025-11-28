@@ -25,7 +25,7 @@ class TentsGame(BoardGame):
     ACTIONS = {
         "LeftButton": "CycleRight",
         "RightButton": "CycleLeft",
-        "g": "AutoGrass"
+        "g": "AutoGrass", "t": "AutoTent"
     }
     ANNOTS = {
         " ": ((128, 128, 128), 0),
@@ -89,6 +89,8 @@ class TentsGame(BoardGame):
                         case 3: self._board[i] = 2
                 case "AutoGrass":
                     self._auto_grass()
+                case "AutoTent":
+                    self._auto_tent()
 
     def finished(self) -> bool:
         return self._check_equity() and \
@@ -150,6 +152,41 @@ class TentsGame(BoardGame):
                         self._board[i] = self._get_state_number("Grass")
 
         #TODO: Non-adjacent cell to not assigned tree is grass
+
+    def _auto_tent(self):
+        # Check for row constraints
+        for y in range(1, self._h):
+            tent_number, *cells = self._get_row(y)
+            tent_number -= 90
+            if tent_number == cells.count(self._get_state_number("Tent")) + cells.count(self._get_state_number("Empty")):
+                for x in range(1, self._w):
+                    if self._cell_state(x, y) == "Empty":
+                        i = y * self._w + x
+                        self._board[i] = self._get_state_number("Tent")
+
+        # Check for column constraints
+        for x in range(1, self._w):
+            tent_number, *cells = self._get_column(x)
+            tent_number -= 90
+            if tent_number == cells.count(self._get_state_number("Tent")) + cells.count(self._get_state_number("Empty")):
+                for y in range(1, self._h):
+                    if self._cell_state(x, y) == "Empty":
+                        i = y * self._w + x
+                        self._board[i] = self._get_state_number("Tent")
+
+        # Check for non-ambiguous trees
+        #TODO: Connected tree and tents must be ignored.
+        for y in range(1, self._h):
+            for x in range(1, self._w):
+                if self._cell_state(x, y) == "Tree":
+                    adjs = self._get_adjacencies(x, y)
+                    print(f"({x}, {y}): {adjs}")
+                    if adjs.count(self._get_state_number("Empty")) == 1: # If there is only one adj empty space
+                        for dx, dy in ((-1, 0), (0, -1), (1, 0), (0, -1)):
+                            adj_x, adj_y = x + dx, y + dy
+                            if self._check_out_of_bounds(adj_x, adj_y) and self._cell_state(adj_x, adj_y) == "Empty":
+                                adj_i = adj_x + adj_y * self._w
+                                self._board[adj_i] = self._get_state_number("Tent")
 
     # -- UTILITY METHODS --
     def _count_trees(self) -> int:
