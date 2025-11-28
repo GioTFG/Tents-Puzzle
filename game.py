@@ -131,7 +131,7 @@ class TentsGame(BoardGame):
         # Clear near tent
         for y in range(self._h):
             for x in range(self._w):
-                if self._cell_state(x, y) == "Empty" and self._get_state_number("Tent") in self._get_adjacencies(x, y):
+                if self._cell_state(x, y) == "Empty" and self._get_state_number("Tent") in self.get_near_cells(x, y):
                     i = y * self._w + x
                     self._board[i] = self._get_state_number("Grass")
 
@@ -157,7 +157,7 @@ class TentsGame(BoardGame):
         for x in range(1, self._w):
             for y in range(1, self._h):
                 if self._cell_state(x, y) == "Empty":
-                    adjs = self._get_adjacencies(x, y)
+                    adjs = self.get_near_cells(x, y)
                     if self._get_state_number("Tree") not in adjs:
                         i = x + y * self._w
                         self._board[i] = self._get_state_number("Grass")
@@ -272,7 +272,11 @@ class TentsGame(BoardGame):
             i += 1
         return row
 
-    def _get_adjacencies(self, x: int, y: int) -> list[int]:
+    def get_near_cells(self, x: int, y: int) -> list[int]:
+        """
+        Returns an unordered list of all the cells near the cell at the passed coordinates.
+        Diagonal cells are included.
+        """
         adjs = []
         for dx in (-1, 0, 1):
             for dy in (-1, 0, 1):
@@ -281,7 +285,19 @@ class TentsGame(BoardGame):
                 if self._check_out_of_bounds(adj_x, adj_y):
                     if dx != 0 or dy != 0:  # The center cell is not considered
                         adjs.append(self._board[adj_i])
+        return adjs
 
+    def get_adjacent_cells(self, x: int, y: int) -> list[int]:
+        """
+        Returns an unordered list of all the cells adjacent to the cell at the passed coordinates.
+        Diagonal cells are excluded.
+        """
+        adjs = []
+        for dx, dy in ((-1, 0), (0, -1), (1, 0), (0, 1)):
+            adj_x, adj_y = x + dx, y + dy
+            adj_i = adj_y * self._w + adj_x
+            if self._check_out_of_bounds(adj_x, adj_y):
+                adjs.append(self._board[adj_i])
         return adjs
 
     # -- CHECK METHODS --
