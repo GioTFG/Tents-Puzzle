@@ -25,6 +25,7 @@ class TentsGame(BoardGame):
     ACTIONS = {
         "LeftButton": "CycleRight",
         "RightButton": "CycleLeft",
+        "g": "AutoGrass"
     }
     ANNOTS = {
         " ": ((128, 128, 128), 0),
@@ -45,6 +46,32 @@ class TentsGame(BoardGame):
         "Number8": "8", "Number9": "9",
     }
 
+    # The following two must be considered "two-way dictionaries", so they must be always edited together.
+    NUMBER_STATES = {
+        -1: "Null",
+        0: "Empty",
+        1: "Tree",
+        2: "Tent",
+        3: "Grass",
+        90: "Number0",  91: "Number1",
+        92: "Number2",  93: "Number3",
+        94: "Number4",  95: "Number5",
+        96: "Number6",  97: "Number7",
+        98: "Number8",  99: "Number9"
+    }
+    STATE_NUMBERS = {
+        "Null": -1,
+        "Empty": 0,
+        "Tree": 1,
+        "Tent": 2,
+        "Grass": 3,
+        "Number0": 90,  "Number1": 91,
+        "Number2": 92,  "Number3": 93,
+        "Number4": 94,  "Number5": 95,
+        "Number6": 96,  "Number7": 97,
+        "Number8": 98, "Number9": 99
+    }
+
     # -- INHERITED METHODS --
     def play(self, x: int, y: int, action: str):
         if self._check_out_of_bounds(x, y):
@@ -60,6 +87,8 @@ class TentsGame(BoardGame):
                         case 0: self._board[i] = 3
                         case 2: self._board[i] = 0
                         case 3: self._board[i] = 2
+                case "AutoGrass":
+                    self._auto_grass()
 
     def finished(self) -> bool:
         return self._check_equity() and \
@@ -95,6 +124,31 @@ class TentsGame(BoardGame):
         else:
             return "Huh? Even I'm confused!" # Not possible case
 
+    # -- PLAY METHODS --
+    def _auto_grass(self):
+        # Clear near tent
+        for y in range(self._h):
+            for x in range(self._w):
+                if self._cell_state(x, y) == "Empty" and self._get_state_number("Tent") in self._get_adjacencies(x, y):
+                    i = y * self._w + x
+                    self._board[i] = self._get_state_number("Grass")
+
+        # Check for row constraints
+        for y in range(1, self._h):  # First row and column are skipped, as they contain the actual constraints.
+            if self._check_row_constraint(y):
+                for x in range(1, self._w):
+                    if self._cell_state(x, y) == "Empty":
+                        i = y * self._w + x
+                        self._board[i] = self._get_state_number("Grass")
+
+        # Check for column constraints
+        for x in range(1, self._w):
+            if self._check_col_constraint(x):
+                for y in range(1, self._h):
+                    if self._cell_state(x, y) == "Empty":
+                        i = y * self._w + x
+                        self._board[i] = self._get_state_number("Grass")
+
     # -- UTILITY METHODS --
     def _count_trees(self) -> int:
         """
@@ -122,21 +176,23 @@ class TentsGame(BoardGame):
         Returns the state of the cell at (x, y) as a string with a specific value.
         """
         number = self._cell_number(x, y)
-        match number:
-            case -1:
-                return "Null"
-            case 0:
-                return "Empty"
-            case 1:
-                return "Tree"
-            case 2:
-                return "Tent"
-            case 3:
-                return "Grass"
-            case num if 90 <= num <= 99:
-                return "Number" + str(num-90)
-            case _:
-                raise ValueError(f"Invalid number: {number}")
+        return self._get_number_state(number)
+
+    def _get_number_state(self, number: int) -> str:
+        """
+        Returns the associated state to the number passed as an argument.
+        """
+        if number in self.NUMBER_STATES:
+            return self.NUMBER_STATES[number]
+        raise ValueError("Invalid state number")
+
+    def _get_state_number(self, state: str) -> int:
+        """
+        Returns the associated number to the state passed as an argument.
+        """
+        if state in self.STATE_NUMBERS:
+            return self.STATE_NUMBERS[state]
+        raise ValueError("Invalid state")
 
     def _cell_text(self, state: str):
         """
@@ -167,6 +223,18 @@ class TentsGame(BoardGame):
             row.append(self._board[i])
             i += 1
         return row
+
+    def _get_adjacencies(self, x: int, y: int) -> list[int]:
+        adjs = []
+        for dx in (-1, 0, 1):
+            for dy in (-1, 0, 1):
+                adj_x, adj_y = x + dx, y + dy
+                adj_i = adj_y * self._w + adj_x
+                if self._check_out_of_bounds(adj_x, adj_y):
+                    if dx != 0 or dy != 0:  # The center cell is not considered
+                        adjs.append(self._board[adj_i])
+
+        return adjs
 
     # -- CHECK METHODS --
     def _check_equity(self) -> bool:
@@ -263,25 +331,44 @@ class TentsGame(BoardGame):
                     return False
         return True
 
+    def _check_row_constraint(self, row: int):
+        """
+        Checks if the tent number constraint is satisfied for the specified row.
+        It must not be called on the first row (as it is the row of the column constraints.
+        """
+        if row == 0:
+            raise ValueError("You can't pass the constraint row.")
+
+        tent_number, *cells = [c for c in self._get_row(row)]
+        tent_number -= 90  # Because numbers are set as 90 + the actual number
+        return tent_number == cells.count(2)
+
     def _check_row_constraints(self):
         """
         Checks if the tent number constraint is satisfied for every row.
         """
         for r in range(1, self._h): # First row is excluded because it's for constraints
-            tent_number, *cells = [c for c in self._get_row(r)]
-            tent_number -= 90 # Because numbers are set as 90 + the actual number
-            if tent_number != cells.count(2):
+            if not self._check_row_constraint(r):
                 return False
         return True
+
+    def _check_col_constraint(self, col: int):
+        """
+        Checks if the tent number constraint is satisfied for the specified column.
+        """
+        if col == 0:
+            raise ValueError("You can't pass the constraint column.")
+
+        tent_number, *cells = [r for r in self._get_column(col)]
+        tent_number -= 90  # Because numbers are set as 90 + the actual number
+        return tent_number == cells.count(2)
 
     def _check_col_constraints(self):
         """
         Checks if the tent number constraint is satisfied for every column.
         """
         for c in range(1, self._w): # First column is excluded because it's for constraints
-            tent_number, *cells = [r for r in self._get_column(c)]
-            tent_number -= 90 # Because numbers are set as 90 + the actual number
-            if tent_number != cells.count(2):
+            if not self._check_col_constraint(c):
                 return False
         return True
 
