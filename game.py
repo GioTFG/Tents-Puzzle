@@ -287,7 +287,7 @@ class TentsGame(BoardGame):
 
     def _check_tree_tent_connection(self, board: list[int] | bool) -> bool | list[int]:
         """
-        Recursive function.
+        Recursive method.
         It takes as an argument a board with trees and tents (the rest will be ignored).
         For each iteration, it marks as ignored every couple of tree and tent that is unambiguously connected.
         Then it calls itself on that updated board, until there aren't any more possible simplifications.
@@ -296,8 +296,12 @@ class TentsGame(BoardGame):
         """
         # if isinstance(board, bool):
         #     return board
-
-        #TODO: Continue from here
+        #
+        # #TODO: Complete this method (Ex. [8.8])
+        # for i in range(self._h):
+        #     for j in range(self._w):
+        #         if self._cell_state(i, j) == "Tent" and self._check_tent_adjacency(i, j):
+        #
 
 def tents_gui_play(game_instance: TentsGame):
     g2d.init_canvas((game_instance.cols() * W, game_instance.rows() * H + H))
