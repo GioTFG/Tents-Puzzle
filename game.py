@@ -149,6 +149,8 @@ class TentsGame(BoardGame):
                         i = y * self._w + x
                         self._board[i] = self._get_state_number("Grass")
 
+        #TODO: Non-adjacent cell to not assigned tree is grass
+
     # -- UTILITY METHODS --
     def _count_trees(self) -> int:
         """
