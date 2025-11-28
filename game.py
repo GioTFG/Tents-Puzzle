@@ -4,6 +4,92 @@ from boardgame import BoardGame
 
 W, H = 40, 40
 
+def print_board(board: list[int], w: int, h: int) -> None:
+    """
+    (Function made with debug purposes)
+    Prints the passed matrix on the console.
+    """
+    for y in range(h):
+        for x in range(w):
+            term = "\n" if x == w - 1 else ""
+            i = x + y * w
+            print(f"{board[i]:^5}", end= term)
+
+def get_connected_board(board: list[int], width: int, height: int) -> list[int]:
+    """
+    Static function that takes a board with Trees and Tents (the rest will be ignored) and it returns the same list but
+    with marked Tents and Trees that are unambiguously connected together.
+    The numbers corresponding to a marked tent/tree is their corresponding number + 10.
+    (So if 1 is the number for a tree, 10 + 1 = 11 is the number for a tree marked as connected)
+
+    If there already are marked trees or tents, they will first be converted to normal trees/tents, so if they
+    are no longer connected they will be reset.
+    """
+    # Creating a copy of the list
+    board = board[:]
+
+    # Resetting trees and tents already marked as connected
+    for y in range(height):
+        for x in range(width):
+            i = y * width + x
+            if board[i] == 11 or board[i] == 10:
+                board[i] -= 10
+
+    # Marking actually connected trees and tents
+    found = True
+    while found:
+        found = False
+
+        for y in range(1, height):
+            for x in range(1, width):
+                i = y * width + x
+                if board[i] == 1: # This is a tree
+                    # To be unambiguously connected, a tree must be adjacent to a single tent and there must not be
+                    # any empty cells adjacent to it.
+                    adjs = get_adjacencies(board, width, height, x, y)
+
+                    tent_adjs = [pos for n, pos in adjs if n == 2]
+                    empty_adjs = [pos for n, pos in adjs if n == 0]
+
+                    if len(tent_adjs) == 1 and len(empty_adjs) == 0: # The connection is unambiguous if there's only 1 tent and no empty cells
+                    # if len(tent_adjs) == 1:
+                        found = True
+                        board[i] = 11 # So the tree will be connected
+                        tent = tent_adjs[0] # Get the tent (we know for a fact it's only one)
+
+                        # Since it's only one tent, I extract it from the list
+                        tent_x, tent_y = tent
+                        tent_i = tent_y * width + tent_x
+                        board[tent_i] = 12 # Mark the tent as connected
+
+                elif board[i] == 2: # This is a tent
+                    # To be unambiguously connected, a tent must be adjacent to only one three.
+                    adjs = get_adjacencies(board, width, height, x, y)
+                    tree_adjs = [pos for n, pos in adjs if n == 1]
+                    if len(tree_adjs) == 1:
+                        found = True
+                        board[i] = 12
+                        tree = tree_adjs[0] # The tree is only one
+                        tree_x, tree_y = tree
+                        tree_i = tree_y * width + tree_x
+                        board[tree_i] = 11
+
+    return board
+
+def get_adjacencies(board: list[int], width: int, height: int, x: int, y: int) -> list[int, tuple[int, int]]:
+    """
+    Given a board, its width and height and a specific cell...
+    it returns the list of all adjacent cells (not diagonal).
+    Each returned element in the list is a pair: the state and the relative position of the cell.
+    """
+    adj = []
+    for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+        ax, ay = x + dx, y + dy
+        if 0 < ax < width and 0 < ay < height:
+            i = ay * width + ax
+            adj.append((board[i], (ax, ay)))
+    return adj
+
 class TentsGame(BoardGame):
     def __init__(self, w: int = 6, h: int = 6):
 
@@ -25,7 +111,8 @@ class TentsGame(BoardGame):
     ACTIONS = {
         "LeftButton": "CycleRight",
         "RightButton": "CycleLeft",
-        "g": "AutoGrass", "t": "AutoTent"
+        "g": "AutoGrass", "t": "AutoTent",
+        "c": "CheckConnected"
     }
     ANNOTS = {
         " ": ((128, 128, 128), 0),
@@ -36,8 +123,8 @@ class TentsGame(BoardGame):
     TEXTS = {
         "Null": "",
         "Empty": " ",
-        "Tree": "🌳",
-        "Tent": "⛺",
+        "Tree": "🌳", "ConnectedTree": "🌳",
+        "Tent": "⛺", "ConnectedTent": "⛺",
         "Grass": "🌿",
         "Number0": "0", "Number1": "1",
         "Number2": "2", "Number3": "3",
@@ -50,8 +137,8 @@ class TentsGame(BoardGame):
     NUMBER_STATES = {
         -1: "Null",
         0: "Empty",
-        1: "Tree",
-        2: "Tent",
+        1: "Tree", 11: "ConnectedTree",
+        2: "Tent", 12: "ConnectedTent",
         3: "Grass",
         90: "Number0",  91: "Number1",
         92: "Number2",  93: "Number3",
@@ -62,8 +149,8 @@ class TentsGame(BoardGame):
     STATE_NUMBERS = {
         "Null": -1,
         "Empty": 0,
-        "Tree": 1,
-        "Tent": 2,
+        "Tree": 1, "ConnectedTree": 11,
+        "Tent": 2, "ConnectedTent": 12,
         "Grass": 3,
         "Number0": 90,  "Number1": 91,
         "Number2": 92,  "Number3": 93,
@@ -91,6 +178,8 @@ class TentsGame(BoardGame):
                     self._auto_grass()
                 case "AutoTent":
                     self._auto_tent()
+                case "CheckConnected": # Debug
+                    print_board(get_connected_board(self._board, self._w, self._h), self._w, self._h)
 
     def finished(self) -> bool:
         return self._check_equity() and \
@@ -183,32 +272,19 @@ class TentsGame(BoardGame):
                         i = y * self._w + x
                         self._board[i] = self._get_state_number("Tent")
 
-        # Check for non-ambiguous trees
-        #TODO: Connected tree and tents must be ignored.
-        # for y in range(1, self._h):
-        #     for x in range(1, self._w):
-        #         if self._cell_state(x, y) == "Tree":
-        #             adjs = self._get_adjacencies(x, y)
-        #             print(f"({x}, {y}): {adjs}")
-        #             if adjs.count(self._get_state_number("Empty")) == 1: # If there is only one adj empty space
-        #                 for dx, dy in ((-1, 0), (0, -1), (1, 0), (0, -1)):
-        #                     adj_x, adj_y = x + dx, y + dy
-        #                     if self._check_out_of_bounds(adj_x, adj_y) and self._cell_state(adj_x, adj_y) == "Empty":
-        #                         adj_i = adj_x + adj_y * self._w
-        #                         self._board[adj_i] = self._get_state_number("Tent")
 
     # -- UTILITY METHODS --
     def _count_trees(self) -> int:
         """
         Returns total number of trees in the board
         """
-        return self._board.count(1)
+        return self._board.count(self._get_state_number("Tree")) + self._board.count(self._get_state_number("ConnectedTree"))
 
     def _count_tents(self) -> int:
         """
         Returns total number of tents in the board
         """
-        return self._board.count(2)
+        return self._board.count(self._get_state_number("Tent")) + self._board.count(self._get_state_number("ConnectedTent"))
 
 
     def _cell_number(self, x: int, y: int) -> int:
@@ -343,10 +419,10 @@ class TentsGame(BoardGame):
         """
         Checks if the passed tree at (x, y) has at least one adjacent (not diagonal) cell.
         """
-        if self._cell_state(x, y) != "Tree":
+        if self._cell_state(x, y) != "Tree" and self._cell_state(x, y) != "ConnectedTree":
             raise ValueError("Not a tree")
 
-        return self._check_if_is_adjacent(x, y, "Tent")
+        return self._check_if_is_adjacent(x, y, "Tent") or self._check_if_is_adjacent(x, y, "ConnectedTent")
 
     def _check_all_trees(self) -> bool:
         """
@@ -354,7 +430,8 @@ class TentsGame(BoardGame):
         """
         for i in range(self._h):
             for j in range(self._w):
-                if self._cell_state(i, j) == "Tree" and not self._check_tree_adjacency(i, j):
+                # If Tree is in the string of cell state, then it must be a Tree or a ConnectedTree
+                if "Tree" in self._cell_state(i, j) and not self._check_tree_adjacency(i, j):
                     return False
         return True
 
@@ -362,18 +439,18 @@ class TentsGame(BoardGame):
         """
         Checks if the passed tent has at least one adjacent (not diagonal) tree.
         """
-        if self._cell_state(x, y) != "Tent":
+        if self._cell_state(x, y) != "Tent" and self._cell_state(x, y) != "ConnectedTent":
             raise ValueError("Not a tent")
 
-        return self._check_if_is_adjacent(x, y, "Tree")
+        return self._check_if_is_adjacent(x, y, "Tree") or self._check_if_is_adjacent(x, y, "ConnectedTree")
 
     def _check_tent_vicinity(self, x: int, y: int) -> bool:
         """
         Checks if the passed tent has at least one near (diagonal is valid) tent.
         """
-        if self._cell_state(x, y) != "Tent":
+        if self._cell_state(x, y) != "Tent" and self._cell_state(x, y) != "ConnectedTent":
             raise ValueError("Not a tent")
-        return self._check_if_is_near(x, y, "Tent")
+        return self._check_if_is_near(x, y, "Tent") or self._check_if_is_near(x, y, "ConnectedTent")
 
     def _check_all_tents_adj_trees(self) -> bool:
         """
@@ -381,7 +458,7 @@ class TentsGame(BoardGame):
         """
         for i in range(self._h):
             for j in range(self._w):
-                if self._cell_state(i, j) == "Tent" and not self._check_tent_adjacency(i, j):
+                if "Tent" in self._cell_state(i, j) and not self._check_tent_adjacency(i, j):
                     return False
         return True
 
@@ -391,7 +468,7 @@ class TentsGame(BoardGame):
         """
         for i in range(self._h):
             for j in range(self._w):
-                if self._cell_state(i, j) == "Tent" and self._check_tent_vicinity(i, j):
+                if "Tent" in self._cell_state(i, j) and self._check_tent_vicinity(i, j):
                     return False
         return True
 
@@ -405,7 +482,7 @@ class TentsGame(BoardGame):
 
         tent_number, *cells = [c for c in self._get_row(row)]
         tent_number -= 90  # Because numbers are set as 90 + the actual number
-        return tent_number == cells.count(2)
+        return tent_number == cells.count(self._get_state_number("Tent")) + cells.count(self._get_state_number("ConnectedTent"))
 
     def _check_row_constraints(self):
         """
@@ -425,7 +502,7 @@ class TentsGame(BoardGame):
 
         tent_number, *cells = [r for r in self._get_column(col)]
         tent_number -= 90  # Because numbers are set as 90 + the actual number
-        return tent_number == cells.count(2)
+        return tent_number == cells.count(self._get_state_number("Tent")) + cells.count(self._get_state_number("ConnectedTent"))
 
     def _check_col_constraints(self):
         """
