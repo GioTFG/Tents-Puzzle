@@ -91,21 +91,30 @@ def get_adjacencies(board: list[int], width: int, height: int, x: int, y: int) -
     return adj
 
 class TentsGame(BoardGame):
-    def __init__(self, w: int = 6, h: int = 6):
+    def __init__(self, file: str = None):
 
-        self._w, self._h = w, h
+        self._w, self._h = 0, 0
 
-        self._board = [ # Tenda: 2, Albero: 1, Vuoto: 0
-            # The next two lines are for column and row number rules
-            # Numeri: 90 -> 0, 91 -> 1, 92 -> 2, 93 -> 3 ecc.
-            # -1: Null (Do not draw)
-            -1, 92, 90, 91, 90, 92,
-            92, 0,  1,  0,  0,  0,
-            90, 0,  0,  0,  0,  1,
-            92, 0,  1,  0,  1,  0,
-            90, 0,  0,  0,  0,  1,
-            91, 0,  0,  0,  0,  0
-        ]
+        """
+        The board will be represented by a matrix of integers.
+        The matrix will be a flat list.
+        Each number in a single cells has a meaning (which can also be seen in the static attributes):
+        - 0: Empty cell
+        - 1: Tree
+        - 2: Tent
+        - 3: Grass
+        - 90-99: The numbers from 90 to 99 will represent their unit digit number (i.e. 97 -> 7). These are used for row/col constraints.
+        - 11: Tree marked as connected to a tent
+        - 12: Tent marked as connected to a tree
+        - -1: Null (Used for the unused first cell, it will be drawn as a black square)
+        """
+        self._board = []
+
+        if file is not None:
+            self._read_file(file)
+
+        if self._w == 0 or self._h == 0 or len(self._board) == 0:
+            raise ValueError("Passed matrix is empty")
 
     # -- STATIC ATTRIBUTES --
     ACTIONS = {
@@ -242,8 +251,6 @@ class TentsGame(BoardGame):
                         i = y * self._w + x
                         self._board[i] = self._get_state_number("Grass")
 
-        #TODO: Non-adjacent cell to not assigned tree is grass
-
         # Check if not near any tree
         for x in range(1, self._w):
             for y in range(1, self._h):
@@ -378,6 +385,48 @@ class TentsGame(BoardGame):
             if self._check_out_of_bounds(adj_x, adj_y):
                 adjs.append(self._board[adj_i])
         return adjs
+
+    def _read_file(self, filename: str):
+        """
+        Method called on game initialization if a file has been passed as an argument.
+        It will load a board based on the contents of the file.
+        The file must contain a valid matrix of numbers (not separated by anything).
+        It must contain only the matrix and nothing else.
+        A matrix is valid if each row has the same length (if the rows are valid the columns will also be valid).
+        The matrix doesn't have to be square to be considered valid.
+        The very first cell will be ignored, as it doesn't contain anything useful in the game.
+        The first row and first column MUST contain single digit numbers between 0 and the matrix height/width respectively.
+        These numbers will be the column/row constraints.
+
+        All the other cells may contain one of the following symbols:
+        (.) - The dot, which means that the corresponding cell will be marked as empty.
+        (T) - The letter T, which means that the corresponding cell will be marked as a tree.
+        """
+        self._w = 0
+        self._h = 0
+        self._board = []
+
+        with open(filename, "r") as file:
+            for line in file:
+                line = line.strip()
+                # Width / Height management
+                if self._w == 0:
+                    self._w = len(line)
+                elif len(line) != self._w:
+                    raise ValueError("The file does not contain a valid matrix")
+                self._h += 1
+
+                # Cell values
+                for c in line:
+                    match c:
+                        case ".":
+                            self._board.append(0)
+                        case "T":
+                            self._board.append(1)
+                        case c if "0" <= c <= "9":
+                            self._board.append(int(c) + 90) # Digits are represented as themselves + 90
+
+            self._board[0] = -1 # Ignore first cell
 
     # -- CHECK METHODS --
     def _check_equity(self) -> bool:
@@ -540,5 +589,5 @@ def tents_gui_play(game_instance: TentsGame):
     g2d.main_loop(ui.tick)
 
 if __name__ == "__main__":
-    game = TentsGame()
+    game = TentsGame("levels/tents-2025-11-27-20x20-special.txt")
     tents_gui_play(game)
