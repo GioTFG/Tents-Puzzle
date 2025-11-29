@@ -80,7 +80,7 @@ def get_adjacencies(board: list[int], width: int, height: int, x: int, y: int) -
     """
     Given a board, its width and height and a specific cell...
     it returns the list of all adjacent cells (not diagonal).
-    Each returned element in the list is a pair: the state and the position of the cell.
+    Each returned element in the list is a pair: the state and the position of the cell. (While the method inside TentsGame only returns the values).
     """
     adj = []
     for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
@@ -127,13 +127,15 @@ class TentsGame(BoardGame):
         " ": ((128, 128, 128), 0),
         "🌳": ((10, 100, 10), 0),
         "🌿": ((100, 200, 100), 0),
-        "⛺": ((255, 117, 24), 0)
+        "⛺": ((255, 117, 24), 0),
+        "🌳✔": ((0, 100, 0), 0),
+        "⛺✔": ((255, 100, 0), 0)
     }
     TEXTS = {
         "Null": "",
         "Empty": " ",
-        "Tree": "🌳", "ConnectedTree": "🌳",
-        "Tent": "⛺", "ConnectedTent": "⛺",
+        "Tree": "🌳", "ConnectedTree": "🌳✔",
+        "Tent": "⛺", "ConnectedTent": "⛺✔",
         "Grass": "🌿",
         "Number0": "0", "Number1": "1",
         "Number2": "2", "Number3": "3",
@@ -188,7 +190,7 @@ class TentsGame(BoardGame):
                 case "AutoTent":
                     self._auto_tent()
                 case "CheckConnected": # Debug
-                    print_board(get_connected_board(self._board, self._w, self._h), self._w, self._h)
+                    print_board(self.connect_trees_tents(), self._w, self._h)
 
     def finished(self) -> bool:
         return self._check_equity() and \
@@ -226,9 +228,8 @@ class TentsGame(BoardGame):
 
     # -- PLAY METHODS --
     def _auto_grass(self):
-        self._board = get_connected_board(self._board, self._w, self._h)
-
         # Clear near tent
+        self._board = self.connect_trees_tents()
         for y in range(self._h):
             for x in range(self._w):
                 if self._cell_state(x, y) == "Empty" and self._get_state_number("Tent") in self.get_near_cells(x, y):
@@ -236,6 +237,7 @@ class TentsGame(BoardGame):
                     self._board[i] = self._get_state_number("Grass")
 
         # Check for row constraints
+        self._board = self.connect_trees_tents()
         for y in range(1, self._h):  # First row and column are skipped, as they contain the actual constraints.
             if self._check_row_constraint(y):
                 for x in range(1, self._w):
@@ -244,6 +246,7 @@ class TentsGame(BoardGame):
                         self._board[i] = self._get_state_number("Grass")
 
         # Check for column constraints
+        self._board = self.connect_trees_tents()
         for x in range(1, self._w):
             if self._check_col_constraint(x):
                 for y in range(1, self._h):
@@ -252,17 +255,18 @@ class TentsGame(BoardGame):
                         self._board[i] = self._get_state_number("Grass")
 
         # Check if not near any tree
+        self._board = self.connect_trees_tents()
         for x in range(1, self._w):
             for y in range(1, self._h):
                 if self._cell_state(x, y) == "Empty":
-                    adjs = self.get_near_cells(x, y)
+                    adjs = self.get_adjacent_cells(x, y)
                     if self._get_state_number("Tree") not in adjs:
                         i = x + y * self._w
                         self._board[i] = self._get_state_number("Grass")
 
     def _auto_tent(self):
-        self._board = get_connected_board(self._board, self._w, self._h)
         # Check for row constraints
+        self._board = self.connect_trees_tents()
         for y in range(1, self._h):
             tent_number, *cells = self._get_row(y)
             tent_number -= 90
@@ -273,6 +277,7 @@ class TentsGame(BoardGame):
                         self._board[i] = self._get_state_number("Tent")
 
         # Check for column constraints
+        self._board = self.connect_trees_tents()
         for x in range(1, self._w):
             tent_number, *cells = self._get_column(x)
             tent_number -= 90
@@ -282,6 +287,22 @@ class TentsGame(BoardGame):
                         i = y * self._w + x
                         self._board[i] = self._get_state_number("Tent")
 
+
+        # Check if there's a tree with exactly one empty adjacent cell
+        self._board = self.connect_trees_tents()
+        for x in range(1, self._w):
+            for y in range(1, self._h):
+                if self._cell_state(x, y) == "Tree":
+                    adjs = get_adjacencies(self._board, self._w, self._h, x, y)
+                    empty_adjs = [pos for state, pos in adjs if state == self._get_state_number("Empty")]
+                    if len(empty_adjs) == 1:
+                        empty_cell = empty_adjs[0]
+                        cell_x, cell_y = empty_cell
+                        cell_i = cell_y * self._w + cell_x
+                        self._board[cell_i] = self._get_state_number("Tent")
+
+    def connect_trees_tents(self) -> list[int]:
+        return get_connected_board(self._board, self._w, self._h)
 
     # -- UTILITY METHODS --
     def _count_trees(self) -> int:
@@ -589,5 +610,5 @@ def tents_gui_play(game_instance: TentsGame):
     g2d.main_loop(ui.tick)
 
 if __name__ == "__main__":
-    game = TentsGame("levels/tents-2025-11-27-20x20-special.txt")
+    game = TentsGame("levels/tents-2025-11-27-8x8-easy.txt")
     tents_gui_play(game)
