@@ -80,7 +80,7 @@ def get_adjacencies(board: list[int], width: int, height: int, x: int, y: int) -
     """
     Given a board, its width and height and a specific cell...
     it returns the list of all adjacent cells (not diagonal).
-    Each returned element in the list is a pair: the state and the relative position of the cell.
+    Each returned element in the list is a pair: the state and the position of the cell.
     """
     adj = []
     for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1)):
@@ -217,6 +217,8 @@ class TentsGame(BoardGame):
 
     # -- PLAY METHODS --
     def _auto_grass(self):
+        self._board = get_connected_board(self._board, self._w, self._h)
+
         # Clear near tent
         for y in range(self._h):
             for x in range(self._w):
@@ -252,11 +254,12 @@ class TentsGame(BoardGame):
                         self._board[i] = self._get_state_number("Grass")
 
     def _auto_tent(self):
+        self._board = get_connected_board(self._board, self._w, self._h)
         # Check for row constraints
         for y in range(1, self._h):
             tent_number, *cells = self._get_row(y)
             tent_number -= 90
-            if tent_number == cells.count(self._get_state_number("Tent")) + cells.count(self._get_state_number("Empty")):
+            if tent_number == cells.count(self._get_state_number("Tent")) + cells.count(self._get_state_number("Empty")) + cells.count(self._get_state_number("ConnectedTent")):
                 for x in range(1, self._w):
                     if self._cell_state(x, y) == "Empty":
                         i = y * self._w + x
@@ -266,7 +269,7 @@ class TentsGame(BoardGame):
         for x in range(1, self._w):
             tent_number, *cells = self._get_column(x)
             tent_number -= 90
-            if tent_number == cells.count(self._get_state_number("Tent")) + cells.count(self._get_state_number("Empty")):
+            if tent_number == cells.count(self._get_state_number("Tent")) + cells.count(self._get_state_number("Empty")) + cells.count(self._get_state_number("ConnectedTent")):
                 for y in range(1, self._h):
                     if self._cell_state(x, y) == "Empty":
                         i = y * self._w + x
