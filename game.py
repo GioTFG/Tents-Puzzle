@@ -32,7 +32,7 @@ def get_connected_board(board: list[int], width: int, height: int) -> list[int]:
     for y in range(height):
         for x in range(width):
             i = y * width + x
-            if board[i] == 11 or board[i] == 10:
+            if board[i] == 11 or board[i] == 12:
                 board[i] -= 10
 
     # Marking actually connected trees and tents
@@ -128,8 +128,8 @@ class TentsGame(BoardGame):
         "🌳": ((10, 100, 10), 0),
         "🌿": ((100, 200, 100), 0),
         "⛺": ((255, 117, 24), 0),
-        "🌳✔": ((0, 100, 0), 0),
-        "⛺✔": ((255, 100, 0), 0)
+        "🌳✔": ((0, 200, 0), 0),
+        "⛺✔": ((255, 200, 50), 0)
     }
     TEXTS = {
         "Null": "",
@@ -232,7 +232,7 @@ class TentsGame(BoardGame):
         self._board = self.connect_trees_tents()
         for y in range(self._h):
             for x in range(self._w):
-                if self._cell_state(x, y) == "Empty" and self._get_state_number("Tent") in self.get_near_cells(x, y):
+                if self._cell_state(x, y) == "Empty" and {self._get_state_number("Tent"), self._get_state_number("ConnectedTent")} & set(self.get_near_cells(x, y)):
                     i = y * self._w + x
                     self._board[i] = self._get_state_number("Grass")
 
@@ -300,6 +300,8 @@ class TentsGame(BoardGame):
                         cell_x, cell_y = empty_cell
                         cell_i = cell_y * self._w + cell_x
                         self._board[cell_i] = self._get_state_number("Tent")
+                        # if not self._check_tent_vicinity(cell_x, cell_y):
+                        #     self._board[cell_i] = self._get_state_number("Empty")
 
     def connect_trees_tents(self) -> list[int]:
         return get_connected_board(self._board, self._w, self._h)
