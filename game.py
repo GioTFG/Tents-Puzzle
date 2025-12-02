@@ -268,8 +268,6 @@ class TentsGame(BoardGame):
 
     def _auto_tent(self):
         # Check for row constraints
-        #TODO: Chiedere al prof se si deve lasciare così per poi fare il ragionamento per assurdo col tasto a oppure
-        # se è da fixare
         self._board = self.connect_trees_tents()
         for y in range(1, self._h):
             tent_number, *cells = self._get_row(y)
@@ -299,7 +297,10 @@ class TentsGame(BoardGame):
                 if self._cell_state(x, y) == "Tree":
                     adjs = get_adjacencies(self._board, self._w, self._h, x, y)
                     empty_adjs = [pos for state, pos in adjs if state == self._get_state_number("Empty")]
-                    if len(empty_adjs) == 1:
+                    tent_adjs = [pos for state, pos in adjs if state == self._get_state_number("Tent")]
+                    # TODO: Capire se ci vuole oppure no
+                    # tent_adjs += [pos for state, pos in adjs if state == self._get_state_number("ConnectedTent")]
+                    if len(tent_adjs) == 0 and len(empty_adjs) == 1:
                         empty_cell = empty_adjs[0]
                         cell_x, cell_y = empty_cell
                         cell_i = cell_y * self._w + cell_x
