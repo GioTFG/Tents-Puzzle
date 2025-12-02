@@ -594,6 +594,26 @@ class TentsGame(BoardGame):
                 return False
         return True
 
+    def _check_complete_rows(self) -> bool:
+        """
+        Checks if all complete (without empty spaces) rows have as many tents as said by the constraint.
+        Returns True if so. If there's an invalid row, returns False.
+        If this is false, at least a cell must be set to empty to solve the game.
+        """
+        for y in range(1, self._h):
+            tent_number, *cells = self._get_row(y)
+            empty_cells = [cell for cell in cells if cell == self._get_state_number("Empty")]
+            if len(empty_cells) == 0:
+                if self._check_row_constraint(y) == False:
+                    return False
+        return True
+
+
+    def wrong(self):
+        return not all((
+
+        ))
+
 def tents_gui_play(game_instance: TentsGame):
     g2d.init_canvas((game_instance.cols() * W, game_instance.rows() * H + H))
     ui = BoardGameGui(game_instance, game_instance.ACTIONS, game_instance.ANNOTS)
