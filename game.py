@@ -39,6 +39,8 @@ def get_connected_board(board: list[int], width: int, height: int) -> list[int]:
     found = True
     while found:
         found = False
+        # Found is used for repeating the connected check until there's nothing that can be done.
+        # When a connection is found, the code will iterate once again.
 
         for y in range(1, height):
             for x in range(1, width):
@@ -266,6 +268,8 @@ class TentsGame(BoardGame):
 
     def _auto_tent(self):
         # Check for row constraints
+        #TODO: Chiedere al prof se si deve lasciare così per poi fare il ragionamento per assurdo col tasto a oppure
+        # se è da fixare
         self._board = self.connect_trees_tents()
         for y in range(1, self._h):
             tent_number, *cells = self._get_row(y)
@@ -300,8 +304,9 @@ class TentsGame(BoardGame):
                         cell_x, cell_y = empty_cell
                         cell_i = cell_y * self._w + cell_x
                         self._board[cell_i] = self._get_state_number("Tent")
-                        # if not self._check_tent_vicinity(cell_x, cell_y):
-                        #     self._board[cell_i] = self._get_state_number("Empty")
+
+                        self._auto_grass() # When a tent is placed, grass will automatically be placed around it
+                        # This prevents multiple tents being placed next to each other "at the same time".
 
     def connect_trees_tents(self) -> list[int]:
         return get_connected_board(self._board, self._w, self._h)
@@ -594,5 +599,5 @@ def tents_gui_play(game_instance: TentsGame):
     g2d.main_loop(ui.tick)
 
 if __name__ == "__main__":
-    game = TentsGame("levels/tents-2025-11-27-8x8-easy.txt")
+    game = TentsGame("levels/tents-2025-11-27-16x16-easy.txt")
     tents_gui_play(game)
