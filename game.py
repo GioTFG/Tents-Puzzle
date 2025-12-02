@@ -211,6 +211,7 @@ class TentsGame(BoardGame):
         return self._cell_text(self._cell_state(x, y))
 
     def status(self) -> str:
+        print(f"{self.wrong(): = }")
         if self.finished():
             return "Puzzle solved"
         if not self._check_equity():
@@ -299,6 +300,7 @@ class TentsGame(BoardGame):
                     empty_adjs = [pos for state, pos in adjs if state == self._get_state_number("Empty")]
                     tent_adjs = [pos for state, pos in adjs if state == self._get_state_number("Tent")]
                     # TODO: Capire se ci vuole oppure no
+                    # Pare di no
                     # tent_adjs += [pos for state, pos in adjs if state == self._get_state_number("ConnectedTent")]
                     if len(tent_adjs) == 0 and len(empty_adjs) == 1:
                         empty_cell = empty_adjs[0]
@@ -608,9 +610,29 @@ class TentsGame(BoardGame):
                     return False
         return True
 
+    def _check_complete_cols(self) -> bool:
+        """
+        Checks if all complete (without empty spaces) columns have as many tents as said by the constraint.
+        Returns True if so. If there's an invalid row, returns False.
+        If this is false, at least a cell must be set to empty to solve the game.
+        """
+        for x in range(1, self._w):
+            tent_number, *cells = self._get_column(x)
+            empty_cells = [cell for cell in cells if cell == self._get_state_number("Empty")]
+            if len(empty_cells) == 0:
+                if self._check_col_constraint(x) == False:
+                    return False
+        return True
+
 
     def wrong(self):
         return not all((
+            self._check_complete_rows(),
+            self._check_complete_cols(),
+            self._check_all_tents_vicinity()
+            # TODO: Inserire altre condizioni di errore
+            # - Riga/col con #tende > constraint
+            # - Albero senza tende e senza celle libere vicine
 
         ))
 
@@ -620,5 +642,5 @@ def tents_gui_play(game_instance: TentsGame):
     g2d.main_loop(ui.tick)
 
 if __name__ == "__main__":
-    game = TentsGame("levels/tents-2025-11-27-16x16-easy.txt")
+    game = TentsGame("levels/tents-2025-11-27-8x8-easy.txt")
     tents_gui_play(game)
