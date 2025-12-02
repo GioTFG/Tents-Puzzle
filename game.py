@@ -32,7 +32,7 @@ def get_connected_board(board: list[int], width: int, height: int) -> list[int]:
     for y in range(height):
         for x in range(width):
             i = y * width + x
-            if board[i] == 11 or board[i] == 12:
+            if board[i] == 11 or board[i] == 12: # 11: Tree, # 12: Tent
                 board[i] -= 10
 
     # Marking actually connected trees and tents
@@ -587,24 +587,6 @@ class TentsGame(BoardGame):
             if not self._check_col_constraint(c):
                 return False
         return True
-
-    def _check_tree_tent_connection(self, board: list[int] | bool) -> bool | list[int]:
-        """
-        Recursive method.
-        It takes as an argument a board with trees and tents (the rest will be ignored).
-        For each iteration, it marks as ignored every couple of tree and tent that is unambiguously connected.
-        Then it calls itself on that updated board, until there aren't any more possible simplifications.
-        When that happens, if no tree or tent is present on the board, it passes and returns true.
-        Otherwise, there would be unclear connections or some trees might not be connected to any tent, so it returns false.
-        """
-        # if isinstance(board, bool):
-        #     return board
-        #
-        # #TODO: Complete this method (Ex. [8.8])
-        # for i in range(self._h):
-        #     for j in range(self._w):
-        #         if self._cell_state(i, j) == "Tent" and self._check_tent_adjacency(i, j):
-        #
 
 def tents_gui_play(game_instance: TentsGame):
     g2d.init_canvas((game_instance.cols() * W, game_instance.rows() * H + H))
