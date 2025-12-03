@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 import g2d
 from boardgamegui import BoardGameGui
 from boardgame import BoardGame
@@ -123,7 +125,8 @@ class TentsGame(BoardGame):
         "LeftButton": "CycleRight",
         "RightButton": "CycleLeft",
         "g": "AutoGrass", "t": "AutoTent",
-        "c": "CheckConnected"
+        "c": "CheckConnected",
+        "a": "ExclusionPlay"
     }
     ANNOTS = {
         " ": ((128, 128, 128), 0),
@@ -180,19 +183,21 @@ class TentsGame(BoardGame):
                 case "CycleRight":
                     match self._board[i]:
                         case 0: self._board[i] = 2
-                        case 2: self._board[i] = 3
-                        case 3: self._board[i] = 0
+                        case 2 | 12: self._board[i] = 3
+                        case 3 | 13: self._board[i] = 0
                 case "CycleLeft":
                     match self._board[i]:
                         case 0: self._board[i] = 3
-                        case 2: self._board[i] = 0
-                        case 3: self._board[i] = 2
+                        case 2 | 12: self._board[i] = 0
+                        case 3 | 13: self._board[i] = 2
                 case "AutoGrass":
                     self._auto_grass()
                 case "AutoTent":
                     self._auto_tent()
                 case "CheckConnected": # Debug
                     print_board(self.connect_trees_tents(), self._w, self._h)
+                case "ExclusionPlay":
+                    self._exclusion_play()
 
     def finished(self) -> bool:
         return self._check_equity() and \
@@ -310,6 +315,38 @@ class TentsGame(BoardGame):
 
                         self._auto_grass() # When a tent is placed, grass will automatically be placed around it
                         # This prevents multiple tents being placed next to each other "at the same time".
+
+    def _exclusion_play(self):
+        """
+        Makes a play guessing on every empty cells.
+        It creates a copy of the board with only one of the empty cells marked as a tent or grass.
+        If that cell being a tree brings the board to a wrong state, it will be set as grass.
+        Similarly, if a cell marked as a grass brings the board to a wrong state, it will be set as a tent-
+        """
+        if self.wrong(): return
+
+        for y in range(1, self._h):  # They will have the same height width
+            for x in range(1, self._w):
+                if self._cell_state(x, y) == "Empty":
+                    new_game = deepcopy(self)
+                    new_game.set_cell(x, y, "Tent")
+                    if new_game.wrong():
+                        self.set_cell(x, y, "Grass")
+                    else:
+                        new_game.set_cell(x, y, "Grass")
+                        if new_game.wrong():
+                            self.set_cell(x, y,"Tent")
+
+    def set_cell(self, x: int, y: int, state: str):
+        """
+        Sets the cell on the board at (x,y) on the state str.
+        A valid state must be passed.
+        The value for x must be 1 <= x < width.
+        The value for y must be 1 <= y < height.
+        """
+        if 1 <= x < self._w and 1 <= y < self._h:
+            i = y * self._w + x
+            self._board[i] = self._get_state_number(state)
 
     def connect_trees_tents(self) -> list[int]:
         return get_connected_board(self._board, self._w, self._h)
@@ -706,5 +743,5 @@ def tents_gui_play(game_instance: TentsGame):
     g2d.main_loop(ui.tick)
 
 if __name__ == "__main__":
-    game = TentsGame("levels/tents-2025-11-27-8x8-easy.txt")
+    game = TentsGame("levels/tents-2025-11-27-12x12-medium.txt")
     tents_gui_play(game)
