@@ -671,7 +671,7 @@ class TentsGame(BoardGame):
         for y in range(1, self._h):
             for x in range(1, self._w):
                 if self._cell_state(x, y) == "Tent":
-                    trees = [c for c in self.get_adjacent_cells(x, y) if c == "Tree"]
+                    trees = [c for c in self.get_adjacent_cells(x, y) if c == self._get_state_number("Tree")]
                     if len(trees) == 0:
                         return False
         return True
@@ -680,6 +680,15 @@ class TentsGame(BoardGame):
         """
         Returns True if the board is in a state where at least one cell MUST be removed to be solved.
         """
+
+        # print(self._check_complete_rows(),
+        #     self._check_complete_cols(),
+        #     self._check_all_tents_vicinity(),
+        #     self._check_tents_below_constraint(),
+        #     self._check_wrong_tree(),
+        #     self._check_wrong_tent()
+        #       )
+
         return not all((
             self._check_complete_rows(),
             self._check_complete_cols(),
