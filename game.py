@@ -624,14 +624,41 @@ class TentsGame(BoardGame):
                     return False
         return True
 
+    def _check_tents_below_constraint(self):
+        """
+        Checks if every row AND column has less tants than said by the constraint.
+        This is because if there are more tents than what's written on the row/column,
+        the board is surely in a wrong state.
+        """
+        # Rows
+        for y in range(1, self._h):
+            row = self._get_row(y)
+            tent_number, *cells = row
+            tents = [pos for state, pos in cells if state == self._get_state_number("Tent") or state == self._get_state_number("ConnectedTent")]
+
+            if len(tents) > tent_number:
+                return False
+
+        for x in range(1, self._w):
+            col = self._get_column(x)
+            tent_number, *cells = col
+            tents = [pos for state, pos in cells if state == self._get_state_number("Tent") or state == self._get_state_number("ConnectedTend")]
+
+            if len(tents) > tent_number:
+                return False
+
+        return True
 
     def wrong(self):
+        """
+        Returns True if the board is in a state where at least one cell MUST be removed to be solved.
+        """
         return not all((
             self._check_complete_rows(),
             self._check_complete_cols(),
-            self._check_all_tents_vicinity()
+            self._check_all_tents_vicinity(),
             # TODO: Inserire altre condizioni di errore
-            # - Riga/col con #tende > constraint
+            self._check_tents_below_constraint()
             # - Albero senza tende e senza celle libere vicine
 
         ))
