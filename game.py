@@ -634,7 +634,8 @@ class TentsGame(BoardGame):
         for y in range(1, self._h):
             row = self._get_row(y)
             tent_number, *cells = row
-            tents = [pos for state, pos in cells if state == self._get_state_number("Tent") or state == self._get_state_number("ConnectedTent")]
+            tent_number -= 90
+            tents = [c for c in cells if c == self._get_state_number("Tent") or c == self._get_state_number("ConnectedTent")]
 
             if len(tents) > tent_number:
                 return False
@@ -642,7 +643,8 @@ class TentsGame(BoardGame):
         for x in range(1, self._w):
             col = self._get_column(x)
             tent_number, *cells = col
-            tents = [pos for state, pos in cells if state == self._get_state_number("Tent") or state == self._get_state_number("ConnectedTend")]
+            tent_number -= 90
+            tents = [c for c in cells if c == self._get_state_number("Tent") or c == self._get_state_number("ConnectedTent")]
 
             if len(tents) > tent_number:
                 return False
