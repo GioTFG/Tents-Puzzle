@@ -651,6 +651,18 @@ class TentsGame(BoardGame):
 
         return True
 
+    def _check_wrong_tree(self):
+        """
+        Returns false if any tree on the board has no tents around it and has no adjacent empty cells.
+        """
+        for y in range(1, self._h):
+            for x in range(1, self._w):
+                if self._cell_state(x, y) == "Tree":
+                    adjs = self.get_adjacent_cells(x, y)
+                    if self._get_state_number("Tent") not in adjs and self._get_state_number("Empty") not in adjs:
+                        return False
+        return True
+
     def wrong(self):
         """
         Returns True if the board is in a state where at least one cell MUST be removed to be solved.
@@ -660,9 +672,9 @@ class TentsGame(BoardGame):
             self._check_complete_cols(),
             self._check_all_tents_vicinity(),
             # TODO: Inserire altre condizioni di errore
-            self._check_tents_below_constraint()
+            self._check_tents_below_constraint(),
             # - Albero senza tende e senza celle libere vicine
-
+            self._check_wrong_tree()
         ))
 
 def tents_gui_play(game_instance: TentsGame):
