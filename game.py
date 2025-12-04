@@ -271,10 +271,17 @@ class TentsGame(BoardGame):
                 if self._cell_state(x, y) == "Empty":
                     new_game = deepcopy(self)
                     new_game.set_cell(x, y, "Tent")
+                    new_game.play(1, 1, new_game.get_command_keys("AutoGrass")[0])
+                    new_game.play(1, 1, new_game.get_command_keys("AutoTent")[0])
+                    new_game.play(1, 1, new_game.get_command_keys("AutoGrass")[0])
                     if new_game.wrong():
                         self.set_cell(x, y, "Grass")
                     else:
+                        new_game = deepcopy(self)
                         new_game.set_cell(x, y, "Grass")
+                        new_game.play(1, 1, new_game.get_command_keys("AutoGrass")[0])
+                        new_game.play(1, 1, new_game.get_command_keys("AutoTent")[0])
+                        new_game.play(1, 1, new_game.get_command_keys("AutoGrass")[0])
                         if new_game.wrong():
                             self.set_cell(x, y,"Tent")
 
@@ -797,5 +804,5 @@ def tents_gui_play(game_instance: TentsGame):
     g2d.main_loop(ui.tick)
 
 if __name__ == "__main__":
-    game = TentsGame("levels/tents-2025-12-03-8x8-medium.txt")
+    game = TentsGame("levels/tents-2025-11-27-16x16-easy.txt")
     tents_gui_play(game)
