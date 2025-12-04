@@ -31,11 +31,7 @@ def get_connected_board(board: list[int], width: int, height: int) -> list[int]:
     board = board[:]
 
     # Resetting trees and tents already marked as connected
-    for y in range(height):
-        for x in range(width):
-            i = y * width + x
-            if board[i] == 11 or board[i] == 12: # 11: Tree, # 12: Tent
-                board[i] -= 10
+    board = get_disconnected_board(board, width, height)
 
     # Marking actually connected trees and tents
     found = True
@@ -77,6 +73,20 @@ def get_connected_board(board: list[int], width: int, height: int) -> list[int]:
                         tree_x, tree_y = tree
                         tree_i = tree_y * width + tree_x
                         board[tree_i] = 11
+
+    return board
+
+def get_disconnected_board(board: list[int], width: int, height: int) -> list[int]:
+    """
+    Makes a copy of the passed board with all tents and trees disconnected from each other.
+    """
+    board = board[:]
+
+    for y in range(height):
+        for x in range(width):
+            i = y * width + x
+            if board[i] == 11 or board[i] == 12:  # 11: Tree, # 12: Tent
+                board[i] -= 10
 
     return board
 
