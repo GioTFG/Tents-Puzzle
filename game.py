@@ -180,12 +180,12 @@ class TentsGame(BoardGame):
         if self._check_out_of_bounds(x, y):
             i = self._w * y + x
             match action:
-                case "CycleRight":
+                case "CycleLeft":
                     match self._board[i]:
                         case 0: self._board[i] = 2
                         case 2 | 12: self._board[i] = 3
                         case 3 | 13: self._board[i] = 0
-                case "CycleLeft":
+                case "CycleRight":
                     match self._board[i]:
                         case 0: self._board[i] = 3
                         case 2 | 12: self._board[i] = 0
