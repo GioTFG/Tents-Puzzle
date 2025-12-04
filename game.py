@@ -64,7 +64,8 @@ class TentsGame(BoardGame):
         "RightButton": "CycleLeft",
         "g": "AutoGrass", "t": "AutoTent",
         "c": "CheckConnected",
-        "a": "ExclusionPlay"
+        "a": "ExclusionPlay",
+        "p": "CasesPlay"
     }
     ANNOTS = {
         " ": ((128, 128, 128), 0),
@@ -136,6 +137,8 @@ class TentsGame(BoardGame):
                     print_board(self.get_connected_board(), self._w, self._h)
                 case "ExclusionPlay":
                     self._exclusion_play()
+                case "CasesPlay":
+                    self._cases_play()
 
     def finished(self) -> bool:
         return self._check_equity() and \
@@ -275,6 +278,39 @@ class TentsGame(BoardGame):
                         if new_game.wrong():
                             self.set_cell(x, y,"Tent")
 
+    def _cases_play(self):
+        """
+        Makes an automatic play trying to see if there are sure adjacencies.
+        It makes two plays for every empty cell on the board:
+        - One for the grass state and one for the tent state
+        Then, for each of them, it automatically updates the board with the automatic grass and tent placement.
+        The two resulting boards are compared:
+        - all the cells that have the same state on both boards will be set as that state on the actual game board.
+        """
+        for y in range(1, self._h):
+            for x in range(1, self._w):
+                if self._cell_state(x, y) == "Empty":
+                    tent_case = deepcopy(self)
+                    tent_case.set_cell(x, y, "Tent")
+                    grass_case = deepcopy(self)
+                    grass_case.set_cell(x, y, "Grass")
+
+                    # x and y are set to 1 because they're all automatic plays, they don't actually need a position
+                    tent_case.play(1, 1, tent_case.get_command_keys("AutoGrass")[0])
+                    tent_case.play(1, 1, tent_case.get_command_keys("AutoTent")[0])
+                    tent_case.play(1, 1, tent_case.get_command_keys("ExclusionPlay")[0])
+                    grass_case.play(1, 1, grass_case.get_command_keys("AutoGrass")[0])
+                    grass_case.play(1, 1, grass_case.get_command_keys("AutoTent")[0])
+                    grass_case.play(1, 1, grass_case.get_command_keys("ExclusionPlay")[0])
+
+
+                    tent_case = tent_case.get_disconnected_board()
+                    grass_case = grass_case.get_disconnected_board()
+
+                    for i, (state1, state2) in enumerate(zip(tent_case, grass_case)):
+                        if state1 == state2:
+                            self._board[i] = state1
+
     def set_cell(self, x: int, y: int, state: str):
         """
         Sets the cell on the board at (x,y) on the state str.
@@ -388,6 +424,13 @@ class TentsGame(BoardGame):
             if self._check_out_of_bounds(adj_x, adj_y):
                 adjs.append(self._board[adj_i])
         return adjs
+
+    def get_command_keys(self, action: str) -> list[str]:
+        """
+        Returns a list of all the keys assigned to a specific action.
+        It returns a list as there could be more than one key assigned to an action.
+        """
+        return [key for key, act in self.ACTIONS.items() if act == action]
 
     def _read_file(self, filename: str):
         """
@@ -741,6 +784,11 @@ class TentsGame(BoardGame):
             self._check_wrong_tent()
 
             #TODO: Verificare che ci siano TUTTI i possibili casi di board invalida.
+
+            #TODO: Inserire caso in cui le celle libere sono tutte adiacenti e non permettono
+            # il piazzamento di tutte le tende.
+            # Esempio (g: grass, t: tent, _: empty): 3 -> gggg____
+            #  Qui non si possono piazzare 3 tende, si toccherebbero sempre.
         ))
 
 def tents_gui_play(game_instance: TentsGame):
@@ -749,5 +797,5 @@ def tents_gui_play(game_instance: TentsGame):
     g2d.main_loop(ui.tick)
 
 if __name__ == "__main__":
-    game = TentsGame("levels/tents-2025-11-27-12x12-medium.txt")
+    game = TentsGame("levels/tents-2025-12-03-8x8-medium.txt")
     tents_gui_play(game)
